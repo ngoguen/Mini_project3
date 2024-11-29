@@ -5,6 +5,11 @@ const HF_apiKey = process.env.HF_apiKey;
 const fetch = require("node-fetch");
 const apiKey = "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";  // Replace with your Hugging Face API key
 
+if (!apiKey || apiKey === "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") {
+    console.error("Invalid or missing API key. Please check your .env file.");
+    return "Error: Missing API Key";
+}
+
 const model1 = "microsoft/DialoGPT-small"; // Model for Model 1
 const model2 = "google/flan-t5-xxl"; // Model for Model 2
 
