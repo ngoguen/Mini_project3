@@ -1,7 +1,7 @@
 // Hugging Face API key for authentication
 const HF_apiKey = "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";
 
-// Model names to be used for conversation
+// Model to be used 
 const model1 = "microsoft/DialoGPT-small";
 const model2 = "google/flan-t5-base";
 
@@ -9,8 +9,8 @@ const model2 = "google/flan-t5-base";
 // Parameters:
 // - model: The Hugging Face model to query
 // - prompt: The input text for the model
-// - maxTokens: The maximum number of tokens in the output (default: 100)
-// - temperature: Sampling temperature for the model output (default: 0.9)
+// - maxTokens: The maximum number of tokens in the output 
+// - temperature: Sampling temperature for the model output 
 async function generateResponse(model, prompt, maxTokens = 100, temperature = 0.9) {
     try {
         // Sending a POST request to the Hugging Face inference API
@@ -66,14 +66,14 @@ function displayMessages(history) {
     });
 }
 
-// Class to manage the AI conversation
+// Main Class
 class AIManager {
     constructor(updateMessageCallback) {
         this.running = false;         // Indicates if the conversation loop is active
         this.paused = false;          // Indicates if the conversation loop is paused
         this.updateMessages = updateMessageCallback; // Callback to update displayed messages
         this.history = [];            // Stores the conversation history
-        this.conversationPrompt = "Cakes are great!"; // Initial conversation prompt
+        this.conversationPrompt = "Cakes are great!"; //Conversation prompt
     }
 
     // Conversation loop to handle interactions between two models
