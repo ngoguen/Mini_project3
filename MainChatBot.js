@@ -1,155 +1,155 @@
+// Load environment variables from a .env file
 require('dotenv').config();
 
+// Hugging Face API key, loaded from environment variables or a fallback value
+const HF_apiKey = process.env.HF_apiKey || "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";
 
-const HF_apiKey = process.env.HF_apiKey|| "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";
-
+// Dynamic import of the node-fetch library for HTTP requests
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-
+// Log the API key being used for debugging purposes
 console.log("HF API Key:", HF_apiKey);
 
+// Hardcoded Hugging Face API key for use in the script
 const apiKey = "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";  // Replace with your Hugging Face API key
 
-const model1 = "microsoft/DialoGPT-small"; // Model for Model 1
-const model2 = "google/flan-t5-base"; // Model for Model 2
+// Define the models to be used in the conversation loop
+const model1 = "microsoft/DialoGPT-small"; // Model 1: A conversational model
+const model2 = "google/flan-t5-base"; // Model 2: A text generation model
 
+// Log the API key for additional debugging
 console.log("API Key in use:", apiKey);
 
-
-// Function to generate a response from a model
+// Function to generate a response from a Hugging Face model
+// Parameters:
+// - model: The model to query
+// - prompt: Input text for the model
+// - maxTokens: Maximum length of the generated response (default: 100)
+// - temperature: Controls randomness in the response (default: 0.9)
 async function generateResponse(model, prompt, maxTokens = 100, temperature = 0.9) {
-   
-    const maxRetries = 5; // Number of retries
-    const retryDelay = 500; // 5 seconds between retries
+    const maxRetries = 5; // Maximum number of retry attempts
+    const retryDelay = 500; // Delay between retries in milliseconds
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-   
-    try{ const response = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            inputs: prompt,
-            parameters: {
-                max_new_tokens: maxTokens,
-                temperature: temperature, 
-                do_sample: true
+        try {
+            // Send a POST request to the Hugging Face API
+            const response = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${apiKey}`, // Include API key for authentication
+                    "Content-Type": "application/json"  // Specify content type as JSON
+                },
+                body: JSON.stringify({
+                    inputs: prompt, // Input text for the model
+                    parameters: {
+                        max_new_tokens: maxTokens, // Limit response length
+                        temperature: temperature,  // Control randomness
+                        do_sample: true            // Enable sampling for varied responses
+                    }
+                })
+            });
+
+            const data = await response.json(); // Parse the response as JSON
+
+            if (response.ok) {
+                // Return the generated text if the response is successful
+                return data.generated_text || (Array.isArray(data) && data[0]?.generated_text) || "Error: No response generated.";
+            } else {
+                // Log any errors received from the model
+                console.error(`Error from model ${model}:`, data.error || data);
+                return null;
             }
-        })
-    });
-
-    const data = await response.json();
-
-
-    if (response.ok ){
-        return data.generated_text || (Array.isArray(data) && data[0]?.generated_text) || "Error : No response generated.";
+        } catch (error) {
+            // Log any network or fetch errors
+            console.error(`Error fetching response from model ${model}:`, error.message);
+            return null;
+        }
     }
-    else{
-        console.error(`Error from model ${model}:`,data.error || data);
-        return null;
-    }
-}catch(error){
-        console.error(`Error fetching response from model ${model}:`,error.message);
-        return null;
-    }
-    }
+    // Log if the model fails after maximum retries
     console.error(`Model ${model} failed to load after ${maxRetries} attempts.`);
     return null;
 }
-    
 
-
-
-
-function updateConvo(speaker, message){
-    const messages = document.createElement('p');
-    messages.textContent =`${speaker} : ${message}`;
-    conversationDivision.appendChild(messages);
-    
+// Function to update the conversation display
+// Parameters:
+// - speaker: The name of the speaker (e.g., Model 1 or Model 2)
+// - message: The message generated by the speaker
+function updateConvo(speaker, message) {
+    const messages = document.createElement('p'); // Create a new paragraph element
+    messages.textContent = `${speaker}: ${message}`; // Set the content to the speaker and message
+    conversationDivision.appendChild(messages); // Add the message to the conversation display
 }
 
-
-class AIManager{// sets default inputs as null;
-    constructor(){
-        this.running = false;
-        this.paused= false;
+// Class to manage the AI conversation loop
+class AIManager {
+    constructor() {
+        this.running = false; // Tracks if the conversation loop is active
+        this.paused = false;  // Tracks if the conversation loop is paused
     }
-
-    // Start with an initial prompt
 
     // Function to initiate the conversation loop between two models
     async conversationLoop() {
-    if (this.running) return;
-    this.running =true;
-    this.paused = false;
-    let conversationPrompt = "How to find the most efficient way to streamline a complex project with strict deadlines";
+        if (this.running) return; // Prevent starting a new loop if already running
+        this.running = true;
+        this.paused = false;
 
-    while ( this.running) {
-        if(this.paused){// sets a paused loop if user pauses 
-            await new Promise((resolve)=> setTimeout(resolve,100)); // Creates a delay of 100 miliseconds before conditons are checked again
-            continue;
+        // Initial conversation prompt
+        let conversationPrompt = "How to find the most efficient way to streamline a complex project with strict deadlines";
+
+        while (this.running) {
+            if (this.paused) {
+                // Wait briefly if the conversation is paused
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                continue;
+            }
+
+            console.log("Model 1:", conversationPrompt);
+
+            // Model 1 generates a response
+            const response1 = await generateResponse(model1, conversationPrompt);
+            if (!response1) break; // Exit the loop if no response is generated
+            console.log("Model 2:", response1);
+
+            // Model 2 generates a response based on Model 1's response
+            const response2 = await generateResponse(model2, response1);
+            if (!response2) break; // Exit the loop if no response is generated
+
+            console.log(`Conversation: Model 1 -> "${response1}", Model 2 -> "${response2}"`);
+            conversationPrompt = response2; // Update the prompt for the next iteration
+
+            await new Promise((resolve) => setTimeout(resolve, 100));
         }
-
-        console.log("Model 1:", conversationPrompt);
-
-        // Model 1 generates a response
-        const response1 = await generateResponse(model1, conversationPrompt);
-        if (!response1) break;  // Exit if an error occurs
-        console.log("Model 2:", response1);
-
-        // Model 2 generates a response based on Model 1's response
-        const response2 = await generateResponse(model2, response1);
-        if (!response2) break;  // Exit if an error occurs
-        
-        console.log(`Conversation: Model 1 -> "${response1}", Model 2 -> "${response2}"`);
-        conversationPrompt = response2;  // Set Model 2's response as the new prompt
-
-        await new Promise((resolve) => setTimeout(resolve,100));
-
-
-        this.conversationPrompt ({
-            model1: response1,
-            model2: response2
-        });
+        this.running = false; // Mark the conversation loop as stopped
     }
-    this.running = false;
+
+    // Pause the conversation loop
+    pauseConvo() {
+        this.paused = true;
+        console.log("Conversation paused.");
+    }
+
+    // Resume the conversation loop
+    resumeConvo() {
+        if (!this.running) return; // Do nothing if the loop is not running
+        this.paused = false;
+        this.running = true;
+        console.log("Conversation resumed.");
+    }
+
+    // Stop the conversation loop and reset the state
+    stopConvo() {
+        this.running = false;
+        this.paused = false;
+        updateConvo(model, conversationPrompt); // Clear conversation updates
+        console.log("Conversation stopped.");
+    }
 }
 
-
-
-pauseConvo() {
-    this.paused = true; 
-    console.log("Conversation paused.");
-}
-
-resumeConvo(){
-    if (!this.running) return; 
-    this.paused = false;
-    this.running = true; 
-    console.log("Conversation resumed");
-}
-
-stopConvo(){
-    running = false;
-    paused = false;
-    updateConvo(model, conversationPrompt);
-    console.log("Conversation stopped.");
-}
-
-}
-
+// Create an instance of the AIManager
 const conversationManager = new AIManager();
 
-(async ()=> {
+// Immediately invoke an async function to start the conversation loop
+(async () => {
     console.log("Starting Convo...");
     await conversationManager.conversationLoop();
 })();
-
-
-
-
-
-
-
